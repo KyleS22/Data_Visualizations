@@ -1,17 +1,27 @@
 
 d3.csv("mammal_data.csv").then(function (data) {
         dataset = data;
+	dataset.forEach(function(d){
+		d['Mass (grams)'] = +d['Mass (grams)'];
+		d['Resting Heart Rate (BPM)'] = +d['Resting Heart Rate (BPM)']
+		d['Longevity (Years)'] = +d['Longevity (Years)']
+	});
+
         generateVisualization(dataset);
  });
 
 
 function generateVisualization(dataset){
 	
-	// Width and height of visualization
-	var width = '400';
 	
-	var height = '400';
+	
+	// Width and height of visualization
+	var width = 1600;
+	
+	var height = 900;
 
+	var leftPad = 150;
+	var bottomPad = 100;
 
 	// Max and Min mass values
 	var maxMass = d3.max(dataset, function(d) {
@@ -39,20 +49,35 @@ function generateVisualization(dataset){
 		return d["Longevity (Years)"];
 	});
 
-
+	
 	// Create x, y, and mass scales
 	var scaleX = d3.scaleLinear()
 			.domain([minHeart, maxHeart])
-			.range(10, width-10);
+			.range([leftPad, width-leftPad]);
 
 	var scaleY = d3.scaleLinear()
 			.domain([minLongevity, maxLongevity])
-			.range(10, height-10);
+			.range([bottomPad, height-bottomPad]);
 
-	var scaleMass = d3.scaleLinear()
+	var scaleMass = d3.scaleSqrt()
 				.domain([minMass, maxMass])
 				.range([5, 50]);
+	creatureNames = []
 
+	dataset.forEach(function(d){
+		creatureNames.push(d["Creature"])
+	})
+
+	var scaleColour = d3.scaleOrdinal()
+				.domain(creatureNames)
+				.range(["#ff0000", "#942f2f", "#ff8c08", "#f0e005", "#89fa00", "#36b500", "#0dffb6", "#00f2ff",
+					"#00f2ff", "#00398a", "#816bff", "#9747ff", "#d400ff", "#ff00c8", "#b50061"]);
+				
+	var xAxis = d3.axisBottom()
+			.scale(scaleX);
+	
+	var yAxis = d3.axisLeft()
+			.scale(scaleY);
 
 	//create svg element
 	var svg = d3.select("body")
@@ -60,19 +85,36 @@ function generateVisualization(dataset){
 			.attr("width", width)
 			.attr("height", height);
 
-	console.log("Here")	
-	// TODO: Add a circle for each row in the csv.  Colour will represent the creature, size represents the mass, x is heart rate, y is longevity
+
+	// Add a circle for each row in the csv.  Colour will represent the creature, size represents the mass, x is heart rate, y is longevity
 	svg.selectAll("circle")
 		.data(dataset)
 		.enter()
 		.append("circle")
-		.attr("x", function(d){
-			console.log(scaleX(d["Resting Heart Rate (BPM)"]));
+		.attr("cx", function(d){
 			return scaleX(d["Resting Heart Rate (BPM)"]);
 		})
-		.attr("y", function(d){
+		.attr("cy", function(d){
 			return scaleY(d["Longevity (Years)"]);
-		});
+		})
+		.attr("r", function(d){
+			return scaleMass(d["Mass (grams)"]);
+		})
+		.attr("stroke-width", 1)
+		.attr("stroke", "black")
+		.attr("fill", function(d){
+			return scaleColour(d["Creature"]);
+		})
+	
+	svg.append("g")
+		.attr("transform", "translate(50, 10)")
+		.call(yAxis)
+	
+	var xAxisTranslate = height/2 + 10;
+
+	svg.append("g")
+		.attr("transform", "translate(0, " + 800 + ")")
+		.call(xAxis);
 
 	// TODO: Add a legend
 }
